@@ -2,11 +2,11 @@
 
 Sorted Set is a data-struct inspired by the one from Redis. It allows fast access by key or score.
 
-| Property | Type | Description |
-|---|---|---|
-| `key` | `string` | The identifier of the node. It must be unique within the set. |
-| `value` | `interface {}` | value associated with this node |
-| `score` | `int64` | score is in order to take the sorted set ordered. It may be repeated. |
+| Property | Type           | Description                                                           |
+|----------|----------------|-----------------------------------------------------------------------|
+| `key`    | `string`       | The identifier of the node. It must be unique within the set.         |
+| `value`  | `interface {}` | value associated with this node                                       |
+| `score`  | `float64`      | score is in order to take the sorted set ordered. It may be repeated. |
 
 Each node in the set is associated with a `key`. While `key`s are unique, `score`s may be repeated. 
 Nodes are __taken in order instead of ordered afterwards__, from low score to high score. If scores are the same, the node is ordered by its key in lexicographic order. Each node in the set is associated with __rank__, which represents the position of the node in the sorted set. The __rank__ is 1-based, that is to say, rank 1 is the node with minimum score.
@@ -38,4 +38,6 @@ A typical use case of sorted set is a leader board in a massive online game, whe
 
 ## Documentation
 
-[https://godoc.org/github.com/wangjia184/sortedset](https://godoc.org/github.com/wangjia184/sortedset)
+[https://godoc.org/github.com/tunglt1810/sortedset](https://godoc.org/github.com/tunglt1810/sortedset)
+
+Copyright (c) 2016, Jerry.Wang [https://godoc.org/github.com/wangjia184/sortedset](https://godoc.org/github.com/wangjia184/sortedset)
