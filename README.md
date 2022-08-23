@@ -15,6 +15,18 @@ Sorted Set is implemented basing on skip list and hash map internally. With sort
 
 A typical use case of sorted set is a leader board in a massive online game, where every time a new score is submitted you update it using `AddOrUpdate()`. You can easily take the top users using `GetByRankRange()`, you can also, given an user id, return its rank in the listing using `FindRank()`. Using `FindRank()` and `GetByRankRange()` together you can show users with a score similar to a given user. All very quickly.
 
+## Benchmark
+| Test                                 | N          | Result      |
+|--------------------------------------|------------|-------------|
+| BenchmarkDefaultDecrementInserts-8   | 	 2131048	 | 572.5 ns/op |
+| BenchmarkDefaultIncrementInserts-8   | 	 2683165	 | 466.9 ns/op |
+| BenchmarkDefaultPermutationInserts-8 | 	 1000000	 | 2582 ns/op  |
+| BenchmarkDefaultRandomInserts-8      | 	 1000000	 | 1521 ns/op  |
+| BenchmarkRandomSelectByKey-8         | 	 4122195	 | 335.8 ns/op |
+| BenchmarkRandomSearchByScore-8       | 	 1000000	 | 1063 ns/op  |
+| BenchmarkDelete-8                    | 	 1000000	 | 1481 ns/op  |
+| BenchmarkRandomDelete-8              | 	 1000000	 | 1514 ns/op  |
+
 ## Documentation
 
 [https://godoc.org/github.com/wangjia184/sortedset](https://godoc.org/github.com/wangjia184/sortedset)

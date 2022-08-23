@@ -1,10 +1,13 @@
 package sortedset
 
 import (
+	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 )
 
-func checkOrder(t *testing.T, nodes []*SortedSetNode, expectedOrder []string) {
+func checkOrder(t *testing.T, nodes []*Node, expectedOrder []string) {
 	if len(expectedOrder) != len(nodes) {
 		t.Errorf("nodes does not contain %d elements", len(expectedOrder))
 	}
@@ -207,4 +210,149 @@ func TestCase2(t *testing.T) {
 
 	nodes = sortedset.GetByScoreRange(500, -500, nil)
 	checkOrder(t, nodes, []string{"g", "f", "e", "a", "h"})
+}
+
+func BenchmarkDefaultDecrementInserts(b *testing.B) {
+	list := New()
+
+	for i := 0; i < b.N; i++ {
+		list.AddOrUpdate(fmt.Sprintf("%d", i), float64(i), "")
+	}
+}
+
+func BenchmarkDefaultIncrementInserts(b *testing.B) {
+	list := New()
+
+	for i := 0; i < b.N; i++ {
+		list.AddOrUpdate(fmt.Sprintf("%d", b.N-i), float64(b.N-i), "")
+	}
+}
+
+func BenchmarkDefaultPermutationInserts(b *testing.B) {
+	list := New()
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rList := r.Perm(b.N)
+	for i := 0; i < b.N; i++ {
+		score := rList[i]
+		list.AddOrUpdate(fmt.Sprintf("%d", score), float64(score), "")
+	}
+}
+
+func BenchmarkDefaultRandomInserts(b *testing.B) {
+	list := New()
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < b.N; i++ {
+		score := r.Intn(b.N)
+		list.AddOrUpdate(fmt.Sprintf("%d", score), float64(score), "")
+	}
+}
+
+func BenchmarkRandomSelectByKey(b *testing.B) {
+	list := New()
+	keys := make([]int, 0, b.N)
+
+	for i := 0; i < b.N; i++ {
+		keys = append(keys, i)
+	}
+
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rnd.Shuffle(b.N, func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	for i := 0; i < b.N; i++ {
+		list.AddOrUpdate(fmt.Sprintf("%d", keys[i]), float64(i), "")
+	}
+
+	rnd.Shuffle(b.N, func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		list.GetByKey(fmt.Sprintf("%d", keys[i]))
+	}
+}
+
+func BenchmarkRandomSearchByScore(b *testing.B) {
+	list := New()
+	keys := make([]int, 0, b.N)
+
+	for i := 0; i < b.N; i++ {
+		keys = append(keys, i)
+	}
+
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rnd.Shuffle(b.N, func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	for i := 0; i < b.N; i++ {
+		list.AddOrUpdate(fmt.Sprintf("%d", keys[i]), float64(i), "")
+	}
+
+	rnd.Shuffle(b.N, func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		list.GetByScoreRange(float64(keys[i]), float64(keys[i]), &GetByScoreRangeOptions{
+			Limit:        0,
+			ExcludeStart: true,
+			ExcludeEnd:   true,
+		})
+	}
+}
+
+func BenchmarkDelete(b *testing.B) {
+	list := New()
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	keys := rnd.Perm(b.N)
+
+	for i := 0; i < b.N; i++ {
+		list.AddOrUpdate(fmt.Sprintf("%d", keys[i]), float64(i), "")
+	}
+
+	rnd.Shuffle(b.N, func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		list.Remove(fmt.Sprintf("%d", i))
+	}
+}
+
+func BenchmarkRandomDelete(b *testing.B) {
+	list := New()
+	keys := make([]int, 0, b.N)
+
+	for i := 0; i < b.N; i++ {
+		keys = append(keys, i)
+	}
+
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rnd.Shuffle(b.N, func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	for i := 0; i < b.N; i++ {
+		list.AddOrUpdate(fmt.Sprintf("%d", keys[i]), float64(i), "")
+	}
+
+	rnd.Shuffle(b.N, func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		list.Remove(fmt.Sprintf("%d", keys[i]))
+	}
 }

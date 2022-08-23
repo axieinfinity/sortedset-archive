@@ -1,3 +1,3 @@
-module github.com/wangjia184/sortedset
+module github.com/tunglt1810/sortedset
 
-go 1.17
+go 1.19
