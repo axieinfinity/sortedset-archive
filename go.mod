@@ -1,3 +1,3 @@
-module github.com/tunglt1810/sortedset
+module github.com/axieinfinity/sortedset
 
 go 1.19
