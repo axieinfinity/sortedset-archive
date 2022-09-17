@@ -212,6 +212,45 @@ func TestCase2(t *testing.T) {
 	checkOrder(t, nodes, []string{"g", "f", "e", "a", "h"})
 }
 
+type testElement struct {
+	key   string
+	value string
+	score float64
+}
+
+func TestBackwardAndForward(t *testing.T) {
+	// create a new set
+	sortedset := New()
+
+	alice := testElement{"a", "Alice", 99}
+	bob := testElement{"b", "Bob", 100}
+	carol := testElement{"c", "Alice", 101}
+
+	// fill in new node
+	sortedset.AddOrUpdate(alice.key, alice.score, alice.value)
+	sortedset.AddOrUpdate(bob.key, bob.score, bob.value)
+	sortedset.AddOrUpdate(carol.key, carol.score, carol.value)
+
+	bobNode := sortedset.GetByKey(bob.key)
+
+	previous := bobNode.Previous()
+	if previous == nil {
+		t.Errorf("Previous node of bob shoulds not nil")
+	}
+	if previous.Key() != alice.key || previous.Value != carol.value {
+		t.Errorf("Previous node of bob shoulds be Alice")
+	}
+
+	next := bobNode.Next()
+	if next == nil {
+		t.Errorf("Next node of bob shoulds not nil")
+	}
+	if next.Key() != carol.key || next.Value != carol.value {
+		t.Errorf("Next node of bob shoulds be Carol")
+	}
+
+}
+
 func BenchmarkDefaultDecrementInserts(b *testing.B) {
 	list := New()
 
