@@ -2,6 +2,7 @@ package sortedset
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"testing"
 	"time"
@@ -212,41 +213,94 @@ func TestCase2(t *testing.T) {
 	checkOrder(t, nodes, []string{"g", "f", "e", "a", "h"})
 }
 
-type testElement struct {
-	key   string
-	value string
-	score float64
+func TestSortedSet_GetRandomByScoreRange(t *testing.T) {
+	// create a new set
+	sortedset := New()
+
+	// fill in new node
+	sortedset.AddOrUpdate("a", 89, "Kelly")
+	sortedset.AddOrUpdate("b", 100, "Staley")
+	sortedset.AddOrUpdate("c", 100, "Jordon")
+	sortedset.AddOrUpdate("d", -321, "Park")
+	sortedset.AddOrUpdate("e", 101, "Albert")
+	sortedset.AddOrUpdate("f", 99, "Lyman")
+	sortedset.AddOrUpdate("g", 99, "Singleton")
+	sortedset.AddOrUpdate("h", 70, "Audrey")
+
+	nodes := sortedset.GetRandomByScoreRange(99, 100, nil)
+	if len(nodes) != 4 {
+		t.Errorf("GetRandom with no limit should return 4 nodes")
+	}
+	for _, node := range nodes {
+		if node.score < 99 || node.score > 100 {
+			t.Errorf("Selected node should have score from 99 to 100")
+		}
+	}
+
+	nodes = sortedset.GetRandomByScoreRange(99, 101, &GetByScoreRangeOptions{
+		Limit:        10,
+		ExcludeStart: true,
+		ExcludeEnd:   true,
+	})
+	if len(nodes) != 2 {
+		t.Errorf("GetRandom with exclude start and end index should return 2 nodes")
+	}
+	for _, node := range nodes {
+		if math.Abs(node.score-100) > eps {
+			t.Errorf("Selected node should have score equal 100")
+		}
+	}
+
+	countB := 0
+	countC := 0
+	for i := 0; i < 1000; i++ {
+		nodes = sortedset.GetRandomByScoreRange(99, 101, &GetByScoreRangeOptions{
+			Limit:        1,
+			ExcludeStart: true,
+			ExcludeEnd:   true,
+		})
+		if len(nodes) != 1 {
+			t.Errorf("GetRandom with exclude start and end index should return 1 nodes")
+		}
+		if nodes[0].key == "b" {
+			countB++
+		} else if nodes[0].key == "c" {
+			countC++
+		}
+	}
+	if countB == 0 || countC == 0 {
+		t.Errorf("countB = %d - countC = %d, selected node should be random between \"b\" or \"c\"", countB, countB)
+	}
+	if countB+countC != 1000 {
+		t.Errorf("Total select count should be 1000")
+	}
 }
 
 func TestBackwardAndForward(t *testing.T) {
 	// create a new set
 	sortedset := New()
 
-	alice := testElement{"a", "Alice", 99}
-	bob := testElement{"b", "Bob", 100}
-	carol := testElement{"c", "Alice", 101}
-
 	// fill in new node
-	sortedset.AddOrUpdate(alice.key, alice.score, alice.value)
-	sortedset.AddOrUpdate(bob.key, bob.score, bob.value)
-	sortedset.AddOrUpdate(carol.key, carol.score, carol.value)
+	sortedset.AddOrUpdate("a", 99, "Alice")
+	sortedset.AddOrUpdate("b", 100, "Bob")
+	sortedset.AddOrUpdate("c", 101, "Carol")
 
-	bobNode := sortedset.GetByKey(bob.key)
+	bNode := sortedset.GetByKey("b")
 
-	previous := bobNode.Previous()
+	previous := bNode.Previous()
 	if previous == nil {
-		t.Errorf("Previous node of bob shoulds not nil")
+		t.Errorf("Previous node of \"b\" shoulds not nil")
 	}
-	if previous.Key() != alice.key || previous.Value != carol.value {
-		t.Errorf("Previous node of bob shoulds be Alice")
+	if previous.Key() != "a" || previous.Value != "Alice" {
+		t.Errorf("Previous node of \"b\" shoulds be \"a\"")
 	}
 
-	next := bobNode.Next()
+	next := bNode.Next()
 	if next == nil {
-		t.Errorf("Next node of bob shoulds not nil")
+		t.Errorf("Next node of \"b\" shoulds not nil")
 	}
-	if next.Key() != carol.key || next.Value != carol.value {
-		t.Errorf("Next node of bob shoulds be Carol")
+	if next.Key() != "c" || next.Value != "Carol" {
+		t.Errorf("Next node of \"b\" shoulds be \"c\"")
 	}
 
 }
