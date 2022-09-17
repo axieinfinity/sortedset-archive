@@ -6,12 +6,6 @@ import (
 	"time"
 )
 
-const (
-	SkiplistMaxLevel  = 32   /* Should be enough for 2^32 elements */
-	SkiplistLevelRate = 0.25 /* Skiplist P = 1/4 */
-	eps               = 0.00001
-)
-
 type SortedSet struct {
 	header *Node
 	tail   *Node
@@ -265,7 +259,7 @@ type GetByScoreRangeOptions struct {
 func (set *SortedSet) GetByScoreRange(minScore float64, maxScore float64, options *GetByScoreRangeOptions) []*Node {
 
 	// prepare parameters
-	var limit = int((^uint(0)) >> 1)
+	var limit = defaultLimit
 	if options != nil && options.Limit > 0 {
 		limit = options.Limit
 	}
@@ -290,19 +284,14 @@ func (set *SortedSet) GetByScoreRange(minScore float64, maxScore float64, option
 	if reverse { // search from maxScore to minScore
 		x := set.header
 
+		compare := lesserThanOrEqual
 		if excludeEnd {
-			for i := set.level - 1; i >= 0; i-- {
-				for x.level[i].forward != nil &&
-					x.level[i].forward.score < maxScore {
-					x = x.level[i].forward
-				}
-			}
-		} else {
-			for i := set.level - 1; i >= 0; i-- {
-				for x.level[i].forward != nil &&
-					x.level[i].forward.score <= maxScore {
-					x = x.level[i].forward
-				}
+			compare = lesserThan
+		}
+		for i := set.level - 1; i >= 0; i-- {
+			for x.level[i].forward != nil &&
+				compare(x.level[i].forward.score, maxScore) {
+				x = x.level[i].forward
 			}
 		}
 
@@ -327,19 +316,15 @@ func (set *SortedSet) GetByScoreRange(minScore float64, maxScore float64, option
 	} else {
 		// search from minScore to maxScore
 		x := set.header
+
+		compare := lesserThan
 		if excludeStart {
-			for i := set.level - 1; i >= 0; i-- {
-				for x.level[i].forward != nil &&
-					x.level[i].forward.score <= minScore {
-					x = x.level[i].forward
-				}
-			}
-		} else {
-			for i := set.level - 1; i >= 0; i-- {
-				for x.level[i].forward != nil &&
-					x.level[i].forward.score < minScore {
-					x = x.level[i].forward
-				}
+			compare = lesserThanOrEqual
+		}
+		for i := set.level - 1; i >= 0; i-- {
+			for x.level[i].forward != nil &&
+				compare(x.level[i].forward.score, minScore) {
+				x = x.level[i].forward
 			}
 		}
 
@@ -363,6 +348,88 @@ func (set *SortedSet) GetByScoreRange(minScore float64, maxScore float64, option
 			limit--
 
 			x = next
+		}
+	}
+
+	return nodes
+}
+
+// GetRandomByScoreRange Get the nodes whose score within the specific range
+//
+// If options is nil, it searches in interval [minScore, maxScore] without any limit by default
+//
+// Time complexity of this method is : O(log(N))
+func (set *SortedSet) GetRandomByScoreRange(minScore float64, maxScore float64, options *GetByScoreRangeOptions) []*Node {
+	// prepare parameters
+	var limit = defaultLimit
+	if options != nil && options.Limit > 0 {
+		limit = options.Limit
+	}
+
+	excludeStart := options != nil && options.ExcludeStart
+	excludeEnd := options != nil && options.ExcludeEnd
+	reverse := minScore > maxScore
+	if reverse {
+		minScore, maxScore = maxScore, minScore
+		excludeStart, excludeEnd = excludeEnd, excludeStart
+	}
+	candidates := make([]*Node, 0)
+
+	//////////////////////////
+	var nodes []*Node
+
+	//determine if out of range
+	if set.length == 0 {
+		return nodes
+	}
+	//////////////////////////
+
+	// search from minScore to maxScore
+	x := set.header
+
+	compare := lesserThan
+	if excludeStart {
+		compare = lesserThanOrEqual
+	}
+	for i := set.level - 1; i >= 0; i-- {
+		for x.level[i].forward != nil &&
+			compare(x.level[i].forward.score, minScore) {
+			x = x.level[i].forward
+		}
+	}
+
+	/* Current node is the last with score < or <= minScore. */
+	x = x.level[0].forward
+
+	if excludeEnd {
+		compare = greaterThanOrEqual
+	} else {
+		compare = greaterThan
+	}
+	for x != nil {
+		if compare(x.score, maxScore) {
+			break
+		}
+
+		next := x.level[0].forward
+
+		candidates = append(candidates, x)
+
+		x = next
+	}
+
+	if limit >= len(candidates) {
+		return candidates
+	}
+
+	r := rand.New(rand.NewSource(time.Now().UnixMilli()))
+	for limit > 0 {
+		selected := r.Intn(len(candidates))
+		nodes = append(nodes, candidates[selected])
+		candidates = append(candidates[:selected], candidates[selected+1:]...)
+		limit--
+		if len(candidates) == 0 {
+			break
 		}
 	}
 
