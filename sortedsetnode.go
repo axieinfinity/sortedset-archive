@@ -23,3 +23,11 @@ func (node *Node) Key() string {
 func (node *Node) Score() float64 {
 	return node.score
 }
+
+func (node *Node) Next() *Node {
+	return node.level[0].forward
+}
+
+func (node *Node) Previous() *Node {
+	return node.backward
+}
